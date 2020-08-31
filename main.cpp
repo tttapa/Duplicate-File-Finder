@@ -92,6 +92,20 @@ class MD5_Digester {
     std::vector<char> buff;
 };
 
+void print_size(size_t size) {
+    if (size < 1024) {
+        printf("%lu B\n", size);
+    } else {
+        double scalsize = size;
+        unsigned i;
+        for (i = 0; scalsize >= 1024; ++i)
+            scalsize /= 1024;
+        const char *units[] = {"KiB", "MiB", "GiB", "TiB",
+                               "PiB", "EiB", "ZiB", "YiB"};
+        printf("%.2f %s (%lu B)\n", scalsize, units[i - 1], size);
+    }
+}
+
 int main(int argc, char *argv[]) {
     po::options_description desc("Backup Hash");
     po::positional_options_description pos;
@@ -103,8 +117,9 @@ int main(int argc, char *argv[]) {
         ("include,i", po::value<vector_of_string>(),
          "Include only files that match these patterns.") //
         ("dir,d", po::value<std::string>(),
-         "The directory to process.") //
-        ;
+         "The directory to process.")                       //
+        ("include-empty-files", "Include all empty files.") //
+        ("sort-size,s", "Sort the output by size.");
     pos.add //
         ("dir", -1);
 
@@ -125,6 +140,9 @@ int main(int argc, char *argv[]) {
         std::cout << "Path: " << path << std::endl;
     }
 
+    bool include_empty_files = vm.count("include-empty-files");
+    bool sort_by_size = vm.count("sort-size");
+
     const auto get_default = [](po::variable_value entry, auto def) {
         return entry.empty() ? def : entry.template as<decltype(def)>();
     };
@@ -140,7 +158,7 @@ int main(int argc, char *argv[]) {
 
     using hash_t = std::vector<unsigned char>;
     std::multimap<std::size_t, PathEntry> size_map;
-    std::multimap<hash_t, fs::path const *> hash_map;
+    std::multimap<hash_t, decltype(size_map)::const_pointer> hash_map;
 
     const auto opt = fs::directory_options::skip_permission_denied;
     for (auto direntry : fs::recursive_directory_iterator(path, opt)) {
@@ -149,6 +167,9 @@ int main(int argc, char *argv[]) {
 
         // Get the file size
         auto size = direntry.file_size();
+
+        if (size == 0 && !include_empty_files)
+            continue;
 
         // Use the file size as an index in the first map, search
         // it to see if a file with this size already exists
@@ -172,14 +193,14 @@ int main(int argc, char *argv[]) {
             if (!old_val.in_hash_map) {
                 const auto old_hash = digester.digest_file(old_val.path);
                 digester.reset();
-                hash_map.emplace(old_hash, &old_val.path);
+                hash_map.emplace(old_hash, &*old_it);
             }
 
             // Also hash the second file with the same size and add it
             // to the hash map
             const auto new_hash = digester.digest_file(direntry.path());
             digester.reset();
-            hash_map.emplace(new_hash, &new_it->second.path);
+            hash_map.emplace(new_hash, &*new_it);
         }
         // If this is the first file with this particular size
         else {
@@ -208,13 +229,18 @@ int main(int argc, char *argv[]) {
                     ;
             }
         }
-        const auto cmp = [](iter_t a, iter_t b) {
-            return *a->second < *b->second;
+        const auto cmp_path = +[](iter_t a, iter_t b) {
+            return a->second->second.path < b->second->second.path;
         };
+        const auto cmp_size = +[](iter_t a, iter_t b) {
+            return a->second->first > b->second->first;
+        };
+        const auto cmp = sort_by_size ? cmp_size : cmp_path;
         std::sort(sorted_its.begin(), sorted_its.end(), cmp);
         for (const auto it : sorted_its) {
+            print_size(it->second->first);
             for (auto hash_it = it; hash_it->first == it->first; ++hash_it)
-                puts(hash_it->second->c_str());
+                puts(hash_it->second->second.path.c_str());
             puts("");
         }
 
