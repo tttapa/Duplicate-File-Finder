@@ -1,0 +1,8 @@
+project(Backup-Hash)
+cmake_minimum_required(VERSION 3.16)
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_FLAGS "-Wall -Wextra -Wpedantic")
+add_executable(main main.cpp)
+find_package(OpenSSL REQUIRED COMPONENTS Crypto)
+find_package(Boost REQUIRED COMPONENTS program_options)
+target_link_libraries(main PRIVATE OpenSSL::Crypto Boost::program_options)
