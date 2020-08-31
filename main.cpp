@@ -192,8 +192,6 @@ int main(int argc, char *argv[]) {
     }
 
     if (hash_map.size() > 0) {
-
-        const bool sorted = true;
         using iter_t = decltype(hash_map)::const_iterator;
         std::pmr::monotonic_buffer_resource pmrbuff;
         std::pmr::vector<iter_t> sorted_its(&pmrbuff);
@@ -201,41 +199,25 @@ int main(int argc, char *argv[]) {
         puts("\nDuplicate files:");
         puts("----------------\n");
         auto it = hash_map.begin();
-        auto prev = it;
         auto const end = hash_map.end();
-        bool printed_first = false;
-        for (++it; it != end; ++it) {
-            if (prev->first == it->first) {
-                if (!printed_first) {
-                    if (!sorted)
-                        puts(prev->second->c_str());
-                    else
-                        sorted_its.push_back(prev);
-                }
-                printed_first = true;
-                if (!sorted)
-                    puts(it->second->c_str());
-            } else {
-                if (printed_first)
-                    if (!sorted)
-                        puts("===");
-                printed_first = false;
-            }
-            prev = it;
-        }
-        if (sorted) {
-            const auto cmp = [](iter_t a, iter_t b) {
-                return a->second->native() < b->second->native();
-            };
-            std::sort(sorted_its.begin(), sorted_its.end(), cmp);
-            for (auto it : sorted_its) {
-                for (auto hash_it = it; hash_it->first == it->first;
-                     ++hash_it) {
-                    puts(hash_it->second->c_str());
-                }
-                puts("===");
+        while (it != end) {
+            const auto prev = it;
+            if (++it != end && prev->first == it->first) {
+                sorted_its.push_back(prev);
+                while (++it != end && prev->first == it->first)
+                    ;
             }
         }
+        const auto cmp = [](iter_t a, iter_t b) {
+            return *a->second < *b->second;
+        };
+        std::sort(sorted_its.begin(), sorted_its.end(), cmp);
+        for (const auto it : sorted_its) {
+            for (auto hash_it = it; hash_it->first == it->first; ++hash_it)
+                puts(hash_it->second->c_str());
+            puts("");
+        }
+
     } else {
         puts("\nNo duplicate files.");
     }
