@@ -12,6 +12,7 @@
 #include <map>
 #include <regex>
 #include <vector>
+#include <fmt/format.h>
 
 #include "scanner.hpp"
 
@@ -19,19 +20,22 @@ namespace fs = std::filesystem;
 namespace po = boost::program_options;
 
 int main(int argc, char *argv[]) {
-    po::options_description desc("Backup Hash");
+    po::options_description desc("Allowed options");
     po::positional_options_description pos;
     po::variables_map vm;
     desc.add_options()                         //
         ("help,h", "Print this help message.") //
-        ("exclude,e", po::value<std::vector<std::string>>(),
-         "Exclude any files that match these patterns.") //
-        ("include,i", po::value<std::vector<std::string>>(),
+        ("dir,d", po::value<std::string>()->value_name("<directory>"),
+         "The directory to process.") //
+        ("include,i",
+         po::value<std::vector<std::string>>()->value_name("<regex>"),
          "Include only files that match these patterns.") //
-        ("dir,d", po::value<std::string>(),
-         "The directory to process.")                       //
+        ("exclude,e",
+         po::value<std::vector<std::string>>()->value_name("<regex>"),
+         "Exclude any files that match these patterns.")    //
+        ("sort-size,s", "Sort the output by file size.")    //
         ("include-empty-files", "Include all empty files.") //
-        ("sort-size,s", "Sort the output by size.");
+        ;
     pos.add //
         ("dir", -1);
 
@@ -40,7 +44,15 @@ int main(int argc, char *argv[]) {
         po::store(parser.options(desc).positional(pos).run(), vm);
         po::notify(vm);
         if (vm.count("help")) {
-            std::cout << desc << "\n";
+            fmt::print(stderr, R"(Find duplicate files.
+
+Usage: {} [options] [directory]
+
+If no directory is provided, the current working directory is used.
+
+)",
+                       argv[0]);
+            std::cerr << desc << "\n";
             return 0;
         }
     }
@@ -71,9 +83,6 @@ int main(int argc, char *argv[]) {
         std::pmr::monotonic_buffer_resource pmrbuff;
         std::pmr::vector<iter_t> sorted_its(&pmrbuff);
 
-        puts("\nDuplicate files:");
-        puts("----------------\n");
-
         // Find the first element of each block of multiple files
         // with the same hash. Ignore hashes that only occur once.
         // Insert an iterator to the first element of such a block
@@ -100,6 +109,8 @@ int main(int argc, char *argv[]) {
         std::sort(sorted_its.begin(), sorted_its.end(), cmp);
 
         // Print the sorted results
+        puts("\nDuplicate files:");
+        puts("----------------\n");
         for (const auto it : sorted_its) {
             std::cout << DetailedByteFormatter(it->second->first) << '\n';
             for (auto hash_it = it; hash_it->first == it->first; ++hash_it)

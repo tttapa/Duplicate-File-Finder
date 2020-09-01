@@ -29,8 +29,7 @@ std::ostream &operator<<(std::ostream &os, ByteFormatter fmt) {
         unsigned i;
         for (i = 0; scalsize >= 1024; ++i)
             scalsize /= 1024;
-        const char *units[] = {" KiB", " MiB", " GiB", " TiB",
-                               " PiB", " EiB", " ZiB", " YiB"};
+        const char *units[] = {" KiB", " MiB", " GiB", " TiB", " PiB", " EiB"};
         auto prec = os.precision();
         auto flags = os.flags();
         os << std::setprecision(2) << std::fixed << scalsize << units[i - 1];
