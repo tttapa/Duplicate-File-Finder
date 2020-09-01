@@ -120,10 +120,12 @@ std::ostream &operator<<(std::ostream &os, FileStats stats) {
     os << "Scanned " << stats.num_files << " files, totalling "
        << DetailedByteFormatter(stats.total_size) << " in size.\n";
     os << "Hashed " << stats.num_hashed << " files, totalling "
-       << DetailedByteFormatter(stats.total_hashed_size)
-       << " in size, at an average rate of "
-       << ByteFormatter(std::round(1e9 * stats.total_hashed_size /
-                                   stats.hash_duration.count()))
-       << "/s.";
+       << DetailedByteFormatter(stats.total_hashed_size) << " in size";
+    if (stats.hash_duration.count() > 0) {
+        auto rate = std::round(1e9 * stats.total_hashed_size /
+                               stats.hash_duration.count());
+        os << ", at an average rate of " << ByteFormatter(rate) << "/s";
+    }
+    os << '.';
     return os;
 }
