@@ -12,7 +12,6 @@
 #include <map>
 #include <regex>
 #include <vector>
-#include <fmt/format.h>
 
 #include "scanner.hpp"
 
@@ -44,14 +43,10 @@ int main(int argc, char *argv[]) {
         po::store(parser.options(desc).positional(pos).run(), vm);
         po::notify(vm);
         if (vm.count("help")) {
-            fmt::print(stderr, R"(Find duplicate files.
-
-Usage: {} [options] [directory]
-
-If no directory is provided, the current working directory is used.
-
-)",
-                       argv[0]);
+            std::cerr << "Find duplicate files.\n\nUsage: " << argv[0]
+                      << " [options] [directory]\n\n"
+                         "If no directory is provided, the current working "
+                         "directory is used.\n\n";
             std::cerr << desc << "\n";
             return 0;
         }
