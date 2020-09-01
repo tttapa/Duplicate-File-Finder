@@ -12,7 +12,7 @@ $ dupfind --help
 
 Find duplicate files.
 
-Usage: ./dupfind [options] [directory]
+Usage: dupfind [options] [directory]
 
 If no directory is provided, the current working directory is used.
 
