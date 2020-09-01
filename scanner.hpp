@@ -45,7 +45,8 @@ inline auto scan_folder(const std::filesystem::path &path,
     // Iterate over all files in the given folder recursively
     const auto opt = fs::directory_options::skip_permission_denied;
     for (auto direntry : fs::recursive_directory_iterator(path, opt)) {
-        if (!direntry.is_regular_file() || !matcher(direntry.path()))
+        if (!direntry.is_regular_file() || direntry.is_symlink() ||
+            !matcher(direntry.path()))
             continue;
 
         // Get the file size
