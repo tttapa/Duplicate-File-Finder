@@ -98,7 +98,8 @@ int main(int argc, char *argv[]) {
             return a->second->second.path < b->second->second.path;
         };
         const auto cmp_size = +[](iter_t a, iter_t b) {
-            return a->second->first > b->second->first;
+            return std::tie(b->second->first, a->second->second.path) <
+                   std::tie(a->second->first, b->second->second.path);
         };
         const auto cmp = sort_by_size ? cmp_size : cmp_path;
         std::sort(sorted_its.begin(), sorted_its.end(), cmp);
