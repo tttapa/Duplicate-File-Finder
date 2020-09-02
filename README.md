@@ -25,6 +25,27 @@ Allowed options:
   --include-empty-files    Include all empty files
 ```
 
+### Examples
+
+Find all duplicate files in the current folder:
+
+```sh
+dupfind
+```
+
+Find all duplicate WAV and MP3 files in `~/Music`, ignoring files named
+`cello.wav`:
+
+```sh
+dupfind ~/Music --include '.*\.wav' --include '.*\.mp3' --exclude '.*/cello.wav'
+```
+
+Find all duplicate files in the home folder, sorting the output by file size:
+
+```sh
+dupfind ~ --sort-size
+```
+
 ## Installation
 
 If you're on Debian or Ubuntu, you can download the `.DEB` package from the
