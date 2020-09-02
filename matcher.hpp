@@ -16,14 +16,12 @@ class Matcher {
     }
 
     bool operator()(const std::string &s) const {
-        for (const auto &ptrn : incl_re) {
-            if (!std::regex_match(s, ptrn))
-                return false;
-        }
-        for (const auto &ptrn : excl_re)
-            if (std::regex_match(s, ptrn))
-                return false;
-        return true;
+        const auto match = [&s](std::regex ptrn) {
+            return std::regex_match(s, ptrn);
+        };
+        return (incl_re.empty() ||
+                std::any_of(incl_re.begin(), incl_re.end(), match)) &&
+               !std::any_of(excl_re.begin(), excl_re.end(), match);
     }
 
   private:
