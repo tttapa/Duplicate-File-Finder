@@ -82,3 +82,12 @@ cmake --build build
 # Install
 sudo cmake --build build --target install
 ```
+
+## How it works
+
+The program builds two dictionaries: one that keeps track of the file size and
+the file path of each file, and a second one that keeps track of the SHA-1 hash
+of each file. If the size of two files is different, they cannot be duplicates.
+If the size is the same, however, the hash of the files is computed and
+compared. Finally, all files with hashes that occur multiple times in the
+second dictionary are sorted and printed.
