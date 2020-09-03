@@ -18,6 +18,8 @@ struct FileStats {
     std::chrono::nanoseconds hash_duration = {};
 };
 
+/// Recursively scan the files in the given folder, build the hash map to find 
+/// duplicate files.
 inline auto scan_folder(const std::filesystem::path &path,
                         const Matcher &matcher,
                         bool include_empty_files = false) {
@@ -33,9 +35,9 @@ inline auto scan_folder(const std::filesystem::path &path,
     // value, it stores the file path, and whether the entry is
     // included in the second dictionary or not.
     //
-    // The second dictionary uses the MD5 hash as the key, and
-    // a pointer to the corresponding entry in the first
-    // dictionary as the value.
+    // The second dictionary uses the SHA-1 hash as the key, and
+    // a pointer to the corresponding entry in the first dictionary
+    // as the value.
     using size_map_t = std::multimap<std::size_t, PathEntry>;
     size_map_t size_map;
     using hash_map_t =
@@ -116,6 +118,7 @@ inline auto scan_folder(const std::filesystem::path &path,
 
 #include "utilities.hpp"
 
+/// Print the stats.
 std::ostream &operator<<(std::ostream &os, FileStats stats) {
     os << "Scanned " << stats.num_files << " files, totalling "
        << DetailedByteFormatter(stats.total_size) << " in size.\n";

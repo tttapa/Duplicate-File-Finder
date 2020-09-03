@@ -4,6 +4,7 @@
 #include <iostream>
 #include <regex>
 
+/// Regex matcher to match filenames (either include or exclude them).
 class Matcher {
   public:
     Matcher(const std::vector<std::string> &incl,
