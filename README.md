@@ -18,11 +18,12 @@ If no directory is provided, the current working directory is used.
 
 Allowed options:
   -h [ --help ]            Print this help message.
+  -v [ --version ]         Print the version number.
   -d [ --dir ] <directory> The directory to process.
   -i [ --include ] <regex> Include only files that match these patterns.
   -e [ --exclude ] <regex> Exclude any files that match these patterns.
   -s [ --sort-size ]       Sort the output by file size.
-  --include-empty-files    Include all empty files
+  --include-empty-files    Include all empty files.
 ```
 
 ### Examples
