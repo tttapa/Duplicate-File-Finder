@@ -18,9 +18,9 @@ struct FileStats {
     std::chrono::nanoseconds hash_duration = {};
 };
 
-/// Recursively scan the files in the given folder, build the hash map to find 
+/// Recursively scan the files in the given folder, build the hash map to find
 /// duplicate files.
-inline auto scan_folder(const std::filesystem::path &path,
+inline auto scan_folder(const std::vector<std::string> &paths,
                         const Matcher &matcher,
                         bool include_empty_files = false) {
 
@@ -46,70 +46,72 @@ inline auto scan_folder(const std::filesystem::path &path,
 
     // Iterate over all files in the given folder recursively
     const auto opt = fs::directory_options::skip_permission_denied;
-    for (auto direntry : fs::recursive_directory_iterator(path, opt)) {
-        if (!direntry.is_regular_file() || direntry.is_symlink() ||
-            !matcher(direntry.path()))
-            continue;
+    for (const auto &path : paths) {
+        for (auto direntry : fs::recursive_directory_iterator(path, opt)) {
+            if (!direntry.is_regular_file() || direntry.is_symlink() ||
+                !matcher(direntry.path()))
+                continue;
 
-        // Get the file size
-        auto size = direntry.file_size();
+            // Get the file size
+            auto size = direntry.file_size();
 
-        // Ignore empty files, unless the option "includ-empty-files"
-        // was passed
-        if (size == 0 && !include_empty_files)
-            continue;
+            // Ignore empty files, unless the option "includ-empty-files"
+            // was passed
+            if (size == 0 && !include_empty_files)
+                continue;
 
-        ++stats.num_files;
-        stats.total_size += size;
+            ++stats.num_files;
+            stats.total_size += size;
 
-        // Use the file size as an index in the first map, search
-        // it to see if a file with this size already exists
-        const auto old_it = size_map.lower_bound(size);
+            // Use the file size as an index in the first map, search
+            // it to see if a file with this size already exists
+            const auto old_it = size_map.lower_bound(size);
 
-        // If a file with the same size is already in the size map
-        if (old_it != size_map.end() && old_it->first == size) {
-            // Insert the new entry right before the old one.
-            // Since there are now at least two entries with the
-            // same size, we'll have to compute their hashes.
-            // The second argument is "true" to indicate that the
-            // hash is available for this entry
-            const auto new_it = size_map.emplace_hint(
-                old_it, size, PathEntry{direntry.path(), true});
+            // If a file with the same size is already in the size map
+            if (old_it != size_map.end() && old_it->first == size) {
+                // Insert the new entry right before the old one.
+                // Since there are now at least two entries with the
+                // same size, we'll have to compute their hashes.
+                // The second argument is "true" to indicate that the
+                // hash is available for this entry
+                const auto new_it = size_map.emplace_hint(
+                    old_it, size, PathEntry{direntry.path(), true});
 
-            // If this is only the second file with this size,
-            // (meaning that this is the first collision in the size map)
-            // that means that the first file that had this size hasn't been
-            // hashed yet, so do it now, and add it to the list
-            const auto &[old_key, old_val] = *old_it;
-            if (!old_val.in_hash_map) {
+                // If this is only the second file with this size,
+                // (meaning that this is the first collision in the size map)
+                // that means that the first file that had this size hasn't been
+                // hashed yet, so do it now, and add it to the list
+                const auto &[old_key, old_val] = *old_it;
+                if (!old_val.in_hash_map) {
+                    auto t0 = clock::now();
+                    const auto old_hash = digester.digest_file(old_val.path);
+                    auto t1 = clock::now();
+                    digester.reset();
+                    hash_map.emplace(old_hash, &*old_it);
+                    ++stats.num_hashed;
+                    stats.total_hashed_size += size;
+                    stats.hash_duration += t1 - t0;
+                }
+
+                // Also hash the second file with the same size and add it
+                // to the hash map
                 auto t0 = clock::now();
-                const auto old_hash = digester.digest_file(old_val.path);
+                const auto new_hash = digester.digest_file(direntry.path());
                 auto t1 = clock::now();
                 digester.reset();
-                hash_map.emplace(old_hash, &*old_it);
+                hash_map.emplace(new_hash, &*new_it);
                 ++stats.num_hashed;
                 stats.total_hashed_size += size;
                 stats.hash_duration += t1 - t0;
             }
-
-            // Also hash the second file with the same size and add it
-            // to the hash map
-            auto t0 = clock::now();
-            const auto new_hash = digester.digest_file(direntry.path());
-            auto t1 = clock::now();
-            digester.reset();
-            hash_map.emplace(new_hash, &*new_it);
-            ++stats.num_hashed;
-            stats.total_hashed_size += size;
-            stats.hash_duration += t1 - t0;
-        }
-        // If this is the first file with this particular size
-        else {
-            // Simply insert it into the size list without computing
-            // the hash, so the second argument is "false" (no hash
-            // available yet)
-            size_map.emplace_hint(old_it, size,
-                                  PathEntry{direntry.path(), false});
+            // If this is the first file with this particular size
+            else {
+                // Simply insert it into the size list without computing
+                // the hash, so the second argument is "false" (no hash
+                // available yet)
+                size_map.emplace_hint(old_it, size,
+                                      PathEntry{direntry.path(), false});
+            }
         }
     }
 

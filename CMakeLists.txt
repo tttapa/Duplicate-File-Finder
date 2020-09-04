@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(Duplicate-File-Finder VERSION 0.0.1)
+project(Duplicate-File-Finder VERSION 0.0.2)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_FLAGS "-Wall -Wextra -Wpedantic")
@@ -10,6 +10,8 @@ find_package(Boost REQUIRED COMPONENTS program_options)
 
 # Main target
 add_executable(dupfind main.cpp)
+target_compile_definitions(dupfind PRIVATE 
+  DUPLICATE_FILE_FINDER_VERSION="${Duplicate-File-Finder_VERSION}")
 target_link_libraries(dupfind PRIVATE OpenSSL::Crypto Boost::program_options)
 
 # Installation

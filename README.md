@@ -33,11 +33,11 @@ Find all duplicate files in the current folder:
 dupfind
 ```
 
-Find all duplicate WAV and MP3 files in `~/Music`, ignoring files named
-`cello.wav`:
+Find all duplicate WAV and MP3 files in `~/Music` and `~/Audio`, ignoring files 
+named `cello.wav`:
 
 ```sh
-dupfind ~/Music --include '.*\.wav' --include '.*\.mp3' --exclude '.*/cello.wav'
+dupfind ~/Music ~/Audio --include '.*\.wav' --include '.*\.mp3' --exclude '.*/cello.wav'
 ```
 
 Find all duplicate files in the home folder, sorting the output by file size:

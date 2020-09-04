@@ -22,9 +22,11 @@ int main(int argc, char *argv[]) {
     po::options_description desc("Allowed options");
     po::positional_options_description pos;
     po::variables_map vm;
-    desc.add_options()                         //
-        ("help,h", "Print this help message.") //
-        ("dir,d", po::value<std::string>()->value_name("<directory>"),
+    desc.add_options()                             //
+        ("help,h", "Print this help message.")     //
+        ("version,v", "Print the version number.") //
+        ("dir,d",
+         po::value<std::vector<std::string>>()->value_name("<directory>"),
          "The directory to process.") //
         ("include,i",
          po::value<std::vector<std::string>>()->value_name("<regex>"),
@@ -50,12 +52,18 @@ int main(int argc, char *argv[]) {
             std::cerr << desc << "\n";
             return 0;
         }
+        if (vm.count("version")) {
+            std::cout << DUPLICATE_FILE_FINDER_VERSION << std::endl;
+            return 0;
+        }
     }
 
-    fs::path path = fs::current_path();
+    std::vector<std::string> paths;
     if (vm.count("dir")) {
-        path = fs::path(vm["dir"].as<std::string>());
-        std::cout << "Path: " << path << std::endl;
+        paths = vm["dir"].as<std::vector<std::string>>();
+        std::cout << "Paths: " << paths << std::endl;
+    } else {
+        paths.push_back(fs::current_path());
     }
 
     bool include_empty_files = vm.count("include-empty-files");
@@ -68,7 +76,7 @@ int main(int argc, char *argv[]) {
                     get_default(vm["exclude"], std::vector<std::string>()));
 
     const auto &[size_map, hash_map, stats] =
-        scan_folder(path, matcher, include_empty_files);
+        scan_folder(paths, matcher, include_empty_files);
 
     // Print the stats
     std::cout << stats << std::endl;
