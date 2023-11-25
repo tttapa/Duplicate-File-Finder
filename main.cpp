@@ -10,6 +10,7 @@
 #include <iostream>
 #include <iterator>
 #include <map>
+#include <memory_resource>
 #include <regex>
 #include <vector>
 
